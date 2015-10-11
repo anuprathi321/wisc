@@ -1,0 +1,42 @@
+precision highp float;
+attribute vec3 position;
+attribute vec3 normal;
+uniform mat3 normalMatrix;
+uniform mat4 modelViewMatrix;
+uniform mat4 projectionMatrix;
+varying vec3 fNormal;
+uniform float time;
+
+vec4 rotateX(vec4 p, float time)
+{  
+     vec4 ret = vec4(p.x, (cos(time)*p.y + sin(time)*p.z), (-sin(time)*p.y + cos(time)*p.z), 1.0);
+     return ret;
+}
+
+
+vec4 rotateY(vec4 p, float time)
+{  
+  vec4 ret = vec4((cos(time)*p.x - sin(time)* p.z), p.y, (sin(time)*p.x + cos(time)*p.z), 1.0);     
+     return ret;
+}
+  
+vec4 rotateZ(vec3 p, float time)
+{  
+  vec4 ret = vec4((cos(time)*p.x + sin(time)* p.y), (-sin(time)*p.x + cos(time)*p.y), p.z, 1.0);     
+     return ret;
+}  
+  
+void main()
+{
+  fNormal = normalize(normalMatrix * normal);
+
+  float t = time*5.0;
+  vec4 pos = rotateZ(position, t);
+  pos = rotateX(pos, t);
+  pos = rotateY(pos, t);
+  
+  pos = modelViewMatrix * pos;
+  gl_Position = projectionMatrix * pos;
+  
+  
+}

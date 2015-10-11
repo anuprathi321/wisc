@@ -1,0 +1,31 @@
+precision highp float;
+varying vec3 fNormal;
+uniform float time;
+
+float wave(float x, float amount) {
+  return (sin(x * amount) + 1.) * .5;
+}
+
+float stripes(vec2 p, float steps) {
+  return fract(p.x*steps);
+}
+
+void main()
+{
+  vec3 dir = vec3(0,1,0); // high noon
+  vec3 color = vec3(1,1,0); // yellow
+  
+  float diffuse = .5 + dot(fNormal,dir);
+  
+  
+  gl_FragColor = vec4(diffuse * color, 1.0);
+  
+  gl_FragColor.x += gl_FragColor.r * 0.1 * sin(time);
+  float brightness = stripes(vec2(fNormal.x, fNormal.y), 10.0);
+ // gl_FragColor.xyz = (brightness)*gl_FragColor.xyz;;
+  
+  gl_FragColor.r = wave(gl_FragColor.r, 10.);
+  gl_FragColor.g = wave(gl_FragColor.g, 20.);
+  //gl_FragColor.b = wave(gl_FragColor.g, 40.);
+  gl_FragColor.a = 1.;
+}

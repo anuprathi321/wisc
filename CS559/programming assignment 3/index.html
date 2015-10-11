@@ -1,0 +1,25 @@
+<!DOCTYPE HTML>
+<html>
+  <head>
+    <style>
+      body {
+        margin: 0px;
+        padding: 0px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="myCanvas" width="500" height="500"></canvas>
+    <br>
+    Rotate Object : <input id="RotateSlider" type="range" min="-100" max="100" /><br>
+    Rotate cameraY(Camera View): <input id="CameraYSlider" type="range" min="-300" max="300" /><br>
+    Rotate CameraZ (Camera View) : <input id="CameraZSlider" type="range" min="-500" max="200" /><br>
+    Projection view (Perspective and Orthogonal View) : <input id="ProView" type="range" min="0" max="1" />
+    
+	
+    <script src="./twgl-full.min.js"></script>
+
+	<script src="./draw_p3.js"></script>
+	
+  </body>
+</html> 

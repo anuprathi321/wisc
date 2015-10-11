@@ -1,0 +1,11 @@
+
+Perspective transformations - done
+Interact with the camera -done
+3D hierarchical object that is animated - done
+Filled triangles - done
+Show normals with vectors and/or shading - done
+All using Canvas 2D - done
+Painter’s Algorithm for visibility (and the ability to switch it on and off). - done
+Diffuse Shading - done.
+super cool 2 hollow cubes one inside another showing all things implemented.
+
