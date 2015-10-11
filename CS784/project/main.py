@@ -2,9 +2,6 @@ import requests
 import csv
 from bs4 import BeautifulSoup
 
-g_global_count = 1;
-
-
 def parsePage(zipcode, page, count):
 
 	url ="http://www.yellowpages.com/search?search_terms=restaurants&geo_location_terms=" + str(zipcode) + "&page=" + str(page)
@@ -68,8 +65,9 @@ def parsePage(zipcode, page, count):
 		
 			with open('test.csv', 'a') as fp:
 				a = csv.writer(fp)
-				data = [str(count), d_name, d_street_address, d_city, d_state, d_zipcode, d_phone, d_website_link]
-				a.writerows([data])
+				if d_name != "":
+					data = [str(count), d_name, d_street_address, d_city, d_state, d_zipcode, d_phone, d_website_link]
+					a.writerows([data])
 	except:
 		with open('errors.csv', 'a') as fp:
 			a = csv.writer(fp)
@@ -81,10 +79,12 @@ def parsePage(zipcode, page, count):
 
 if __name__ == "__main__":
 	
-	g_global_count = 1;
-	zipcode = 95050
 	count = 1;
-	i = 1;
-	for i in range(1,15):
-		count = parsePage(zipcode, i, count)
+
+	with open("z1.txt", "r") as lines:
+	    for line in lines: 
+			zipcode = line
+			i = 1
+			for i in range(1):
+				count = parsePage(zipcode, i, count)
 
