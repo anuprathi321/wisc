@@ -7,6 +7,9 @@ def parsePage(zipcode, page, count):
 
 	url ="http://www.yellowpages.com/search?search_terms=restaurants&geo_location_terms=" + str(zipcode) + "&page=" + str(page)
 
+	output_file = "./source/" + str(page) + "_" + str(zipcode).strip() + ".html"
+	urllib.urlretrieve(url,output_file)
+
 	try:
 		r = requests.get(url)
 		soup = BeautifulSoup(r.content, "lxml")
@@ -14,8 +17,6 @@ def parsePage(zipcode, page, count):
 		g_data = soup.find_all("div", {"class":"info"})
 		
 		
-		with open("./source/" + str(page) + "_" + str(zipcode) + ".html", 'w') as fid:
-    			fid.write(r.content)
 
 		#resturants names on a page
 		for item in g_data:
@@ -82,7 +83,7 @@ if __name__ == "__main__":
 	
 	count = 1;
 
-	with open("z.txt", "r") as lines:
+	with open("z1.txt", "r") as lines:
 	    for line in lines: 
 			zipcode = line
 			i = 1
