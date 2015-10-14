@@ -1,5 +1,6 @@
 import requests
 import csv
+import urllib
 from bs4 import BeautifulSoup
 
 def parsePage(zipcode, page, count):
@@ -11,14 +12,14 @@ def parsePage(zipcode, page, count):
 		soup = BeautifulSoup(r.content, "lxml")
 
 		g_data = soup.find_all("div", {"class":"info"})
-
-
+		
+		
+		with open("./source/" + str(page) + "_" + str(zipcode) + ".html", 'w') as fid:
+    			fid.write(r.content)
 
 		#resturants names on a page
 		for item in g_data:
 
-
-			print count
 			d_name = ""
 			d_street_address = ""
 			d_city = ""
@@ -81,10 +82,10 @@ if __name__ == "__main__":
 	
 	count = 1;
 
-	with open("z1.txt", "r") as lines:
+	with open("z.txt", "r") as lines:
 	    for line in lines: 
 			zipcode = line
 			i = 1
-			for i in range(1):
+			for i in range(5):
 				count = parsePage(zipcode, i, count)
 
