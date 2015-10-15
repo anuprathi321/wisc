@@ -9,6 +9,10 @@ var shaderProgram1;
 var trianglePosBuffer1;
 var colorBuffer1;
 var normalBuffer1;
+var shaderProgram2;
+var trianglePosBuffer2;
+
+var normalBuffer2;
 var theta;
 var m4;
 var m3;
@@ -46,6 +50,28 @@ function draw1(Tx, TxNormal) {
     gl.drawArrays(gl.TRIANGLES , 0, trianglePosBuffer1.numItems);
   
 }
+
+function draw2(Tx, TxNormal) {
+
+  
+    gl.enable(gl.DEPTH_TEST);
+    
+    gl.useProgram(shaderProgram2);      
+  
+    var mytrans = Tx;
+    gl.uniformMatrix4fv(shaderProgram2.transf,false,mytrans);
+    gl.uniformMatrix4fv(shaderProgram2.cameraMat,false,TxNormal);
+
+    
+    gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer2);
+    gl.vertexAttribPointer(shaderProgram2.inNormal, normalBuffer2.itemSize, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer1);
+    gl.vertexAttribPointer(shaderProgram2.inColor, colorBuffer1.itemSize, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, trianglePosBuffer2);
+    gl.vertexAttribPointer(shaderProgram2.vertexPositionAttribute, trianglePosBuffer2.itemSize, gl.FLOAT, false, 0, 0);
+    gl.drawArrays(gl.TRIANGLES , 0, trianglePosBuffer2.numItems);
+  
+}
 function init() {
   "use strict";
 
@@ -69,7 +95,7 @@ function init() {
   proView.value = 0;
   
 
-
+  // shader1
   var vertexSource = ""+
     "attribute vec3 pos;" +
     "attribute vec3 inColor;" +
@@ -95,15 +121,33 @@ function init() {
     "gl_FragColor = vec4(diffuse * outColor, 1.0);" +
     "}";
   
-  // now we need to make those programs into
-  // "Shader Objects" - by running the compiler
-  // watch the steps:
-  //   create an object
-  //   attach the source code
-  //   run the compiler
-  //   check for errors
-  
-  // first compile the vertex shader
+  // shader 2
+
+  var vertexSource2 = ""+
+    "attribute vec3 pos;" +
+    "attribute vec3 inColor;" +
+    "attribute vec3 inNormal;" + 
+    "varying vec3 outColor;" +
+    "varying vec3 fNormal;" +
+    "uniform mat4 transf;" +
+    "uniform mat4 cameraMat;" +
+    "void main(void) {" + 
+    "  gl_Position = transf * vec4(pos, 1.0);" +
+    "  vec4 temp = normalize(cameraMat * vec4(inNormal, 1.0));" +
+    "  fNormal = temp.xyz;" +
+    "  outColor = inNormal;" +
+    "}";
+
+  var fragmentSource2 = "" +
+    "precision highp float;" + 
+    "varying vec3 outColor;" +
+    "varying vec3 fNormal;" + 
+    "void main(void) {" +
+    "vec3 dir = vec3(00.0,000.0,100.0);" +
+    "float diffuse = .5 + dot(fNormal,dir);" +
+    "gl_FragColor = vec4(diffuse * outColor, 1.0);" +
+    "}";
+  //init shader 1
   var vertexShader = gl.createShader(gl.VERTEX_SHADER);
   gl.shaderSource(vertexShader,vertexSource);
   gl.compileShader(vertexShader);
@@ -149,9 +193,61 @@ function init() {
   shaderProgram1.transf = gl.getUniformLocation(shaderProgram1,"transf");
   shaderProgram1.cameraMat = gl.getUniformLocation(shaderProgram1,"cameraMat");
 
+
+  // init shader2
+
+  var vertexShader2 = gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vertexShader2,vertexSource2);
+  gl.compileShader(vertexShader2);
+  
+  if (!gl.getShaderParameter(vertexShader2, gl.COMPILE_STATUS)) {
+          alert(gl.getShaderInfoLog(vertexShader2));
+          return null;
+      }
+  
+  // now compile the fragment shader
+  var fragmentShader2 = gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(fragmentShader2,fragmentSource2);
+  gl.compileShader(fragmentShader2);
+  
+  if (!gl.getShaderParameter(fragmentShader2, gl.COMPILE_STATUS)) {
+          alert(gl.getShaderInfoLog(fragmentShader2));
+          return null;
+      }
+
+  // OK, we have a pair of shaders, we need to put them together
+  // into a "shader program" object
+  shaderProgram2 = gl.createProgram();
+  gl.attachShader(shaderProgram2, vertexShader2);
+  gl.attachShader(shaderProgram2, fragmentShader2);
+  gl.linkProgram(shaderProgram2);
+
+  if (!gl.getProgramParameter(shaderProgram2, gl.LINK_STATUS)) {
+    alert("Could not initialise shaders");
+  }
+
+  // with the vertex shader, we need to pass it positions
+  // as an attribute - so set up that communication
+    shaderProgram2.vertexPositionAttribute = gl.getAttribLocation(shaderProgram2, "pos");
+    gl.enableVertexAttribArray(shaderProgram2.vertexPositionAttribute);
+
+    shaderProgram2.inColor = gl.getAttribLocation(shaderProgram2, "inColor");
+    gl.enableVertexAttribArray(shaderProgram2.inColor);
+
+    shaderProgram2.inNormal = gl.getAttribLocation(shaderProgram2, "inNormal");
+    gl.enableVertexAttribArray(shaderProgram2.inNormal);
+
+  // this gives us access to the matrix uniform
+  shaderProgram2.transf = gl.getUniformLocation(shaderProgram2,"transf");
+  shaderProgram2.cameraMat = gl.getUniformLocation(shaderProgram2,"cameraMat");
+
+
+
   var f1, f2, f3;
   var vertexPos = [];
   var normalPos = [];
+  var vertexPos1 = [];
+  var normalPos1 = [];
   var cross1, cross2, normal;
 
     f1 = [100, 100, 100];
@@ -546,8 +642,405 @@ function init() {
     vertexPos = vertexPos.concat(f2);
     vertexPos = vertexPos.concat(f3);
 
-    console.log("len vertex + " + vertexPos.length);
-    console.log("len normal + " + normalPos.length);
+
+    // end of object1
+
+
+    f1 = [180, 180, 180];
+    f2 = [200, 200, 180];
+    f3 = [180, 220, 180];
+    
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    
+    
+    f1 = [180, 180, 180];
+    f2 = [220, 180, 180];
+    f3= [200, 200, 180];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    f1 = [220, 180, 180];
+    f2 = [220, 220, 180];
+    f3 = [200, 200, 180];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    f1 = [200, 200, 180];
+    f2 = [220, 220, 180];
+    f3 = [180, 220, 180];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    //face2
+    f1 = [180, 180, 220];
+    f2 = [200, 200, 220];
+    f3 = [180, 220, 220];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    f1 = [180, 180, 220];
+    f2 = [220, 180, 220];
+    f3 = [200, 200, 220];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    f1 = [220, 180, 220];
+    f2 = [220,220,220];
+    f3 = [200,200,220];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+
+    f1 = [200,200,220];
+    f2 = [220,220,220];
+    f3 = [180,220,220];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    //face3
+    
+    f1 = [180,180,220];
+    f2 = [220,180,220];
+    f3 = [200,180,200];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    f1 = [220,180,220];
+    f2 = [220,180,180];
+    f3 = [200,180,200];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    f1 = [200,180,200];
+    f2 = [220,180,180];
+    f3 = [180,180,180];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    f1 = [180,180,180];
+    f2 = [180,180,220];
+    f3 = [200,180,200];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    
+    //face4
+    f1 = [180,220,220];
+    f2 = [200,220,200];
+    f3 = [180,220,180];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    f1 = [180,220,220];
+    f2 = [220,220,220];
+    f3 = [200,220,200];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    
+    f1 = [220,220,220];
+    f2 = [220,220,180];
+    f3 = [200,220,200];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+    
+    
+    f1 = [200,220,200];
+    f2 = [220,220,180];
+    f3 = [180,220,180];
+
+    cross1 = m3.subtract(f2, f1);
+    cross2 = m3.subtract(f3,f2);
+    normal = m3.cross(cross1, cross2);
+    normal = m3.normalize(normal);
+
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    normalPos1 = normalPos1.concat(normal[0]);
+    normalPos1 = normalPos1.concat(normal[1]);
+    normalPos1 = normalPos1.concat(normal[2]);
+    vertexPos1 = vertexPos1.concat(f1);
+    vertexPos1 = vertexPos1.concat(f2);
+    vertexPos1 = vertexPos1.concat(f3);
+
+
+    // end of object 2
+
 
   var vertexColors = [
     1.0, 0.0, 0.0,
@@ -623,6 +1116,24 @@ function init() {
     colorBuffer1.numItems = 48;
     gl.viewport(0, 0, 500, 500);
 
+
+    //second object
+
+      trianglePosBuffer2 = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, trianglePosBuffer2);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertexPos1), gl.STATIC_DRAW);
+    trianglePosBuffer2.itemSize = 3;
+    trianglePosBuffer2.numItems = 48;
+
+  // create buffer for normal
+  normalBuffer2 = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, normalBuffer2);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normalPos1), gl.STATIC_DRAW);
+  normalBuffer2.itemSize = 3;
+  normalBuffer2.numItems = 48;
+
+
+
     
   // this is the "draw scene" function, but since this 
   // is execute once...
@@ -664,6 +1175,7 @@ function init() {
     var matForNomal = m4.transpose(f1);
 
     draw1(v, matForNomal);
+    draw2(v, matForNomal);
     // first, let's clear the screen
     
     theta += 0.01;
