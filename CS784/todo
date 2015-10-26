@@ -1,0 +1,40 @@
+
+
+THE BIG PICTURE
+
+What are the key ideas behind RDBMSs. What are the limitations of
+RDBMSs?
+
+We have discussed the following concepts. Make sure you understand
+what they mean: big data, data science workflow, distributed and
+parallel systems.
+
+Know what development stage and production stage mean. Know what is
+required in each stage.
+
+Know what the Python data stack means. 
+
+Know what data lake means. 
+
+EXTRACTION
+
+How many different types of extraction? What are the key differences
+among them? When to use what?
+
+
+INFORMATION EXTRACTION
+
+Read Chapter 1 of the Information Extraction Survey
+available from the class homepage (direct link:
+http://pages.cs.wisc.edu/~anhai/courses/784-fall15/ieSurvey.pdf)
+
+
+BLOCKING
+
+Know the purpose of this, at least a few different types of blocking
+methods. Global vs tuple-level blockers.
+
+EVALUATION
+
+Make sure you understand the notion of precision and recall. 
+
