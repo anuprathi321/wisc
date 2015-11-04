@@ -87,25 +87,24 @@
     attribute vec3 vnormal;
     varying vec3 outColor1;
 
+    varying vec3 vEye;
+
     uniform mat4 view;
     uniform mat4 proj;
     uniform mat4 model;
     uniform vec3 lightdir;
     uniform vec3 cubecolor;
-
+    varying vec4 varNormal;
 
     void main(void) {
         gl_Position = proj * view * model * vec4(vpos, 1.0);
         vec4 normal = normalize(model * vec4(vnormal,0.0));
-        float diffuse = 0.1;
-        //if(normal.y > 0.0)
-            diffuse = .5 + .5*abs(dot(normal, vec4(lightdir,0.0)));
         
-        float t = dot(normal, vec4(lightdir, 0.0));
-        t = t*t*t*t*t*t*t*t*t*t;
-        //diffuse += t;
+        vec3 eye = vec3(0.0, 0.0, -1.0);
+        varNormal = normal;
+        vEye = (view*model*vec4(eye, 1.0)).xyz;
 
-        outColor1 = (cubecolor * diffuse);
+        outColor1 = cubecolor;
     }
 </script>
 <script id="car-fs" type="notjs">
@@ -113,9 +112,33 @@
 //  (e.g. the vertex shader figures the lighting
 // note this is used for more than just the cube
     precision highp float;
+
+    uniform vec3 lightdir;
+    varying vec3 vEye;
+    varying vec4 varNormal;
+
     varying vec3 outColor1;
     void main(void) {
-        gl_FragColor = vec4(outColor1, 1.0);
+
+        float diffuse = 0.1;
+        vec3 tempC = 0.3*outColor1;
+        if(varNormal.y > 0.0)
+            tempC = tempC + outColor1*max(0.0, dot(lightdir, varNormal.xyz));
+
+            
+        vec3 h = normalize(vEye + lightdir);
+        
+        float spec = dot(h, varNormal.xyz);
+        vec3 t = spec*vec3(0.0, 0.0, 1.0);
+        t = t*t;
+        
+
+        vec3 finalC = (tempC  );
+        if(vEye.y > 0.0)
+            finalC = t + tempC;
+
+
+        gl_FragColor = vec4(finalC, 1.0);
     }
 </script>
 
